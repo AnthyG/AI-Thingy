@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <style type="text/css">
+        html,
+        body {
+            padding: 0;
+            margin: 0;
+            background: black;
+        }
+        /* #cvs {
+        width: 100%;
+        height: 100vh;
+    } */
+    </style>
+
+</head>
+
+<body>
+
+    <canvas id="cvs" width="640" height="240"></canvas>
+
+</body>
+
+<script type="text/javascript">
+    Math.seed = function(s) {
+        return function() {
+            s = Math.sin(s) * 10000;
+            return s - Math.floor(s);
+        };
+    };
+
+    function init(seedR2) {
+        phscs = {
+            "g": 0.5,
+            "tg": 0.75
+        };
+        chr = {
+            "x": 15,
+            "y": cvs.height - 50,
+            "vx": 0,
+            "vy": 0,
+            "s": 2,
+            "jh": 7,
+            "onG": false,
+            "ml": false,
+            "mr": false
+        };
+        objs = [
+
+        ];
+
+        newObj(
+            0,
+            cvs.height - 2,
+            cvs.width,
+            1000,
+            0,
+            false
+        );
+        newObj(
+            cvs.width,
+            cvs.height - 23,
+            50,
+            23,
+            2,
+            true
+        );
+
+        cntr = 1,
+            anobj = true,
+            uDone = false;
+
+        var seedR2 = seedR2 || parseInt(Math.random() * 100);
+        seedR = seedR2;
+        seed = Math.seed(seedR)();
+        console.log(seedR2 + " :: " + seed);
+
+        update();
+    }
+
+    fps = 30,
+        speed = 1,
+        fpsi = cntr = 1,
+        uDone = false;
+
+    window.onload = function() {
+        cvs = document.getElementById("cvs");
+        ctx = cvs.getContext("2d");
+
+        document.addEventListener("keydown", function(evt) {
+            console.log(evt.keyCode + " down");
+            m_key(evt, true);
+        });
+        document.addEventListener("keyup", function(evt) {
+            console.log(evt.keyCode + " up");
+            m_key(evt, false);
+        });
+
+        init(2);
+    };
+
+    function newObj(x, y, w, h, s, k) {
+        return objs.push({
+            "x": x,
+            "y": y,
+            "w": w,
+            "h": h,
+            "s": s,
+            "k": k
+        });
+    }
+
+    function randObj() {
+        seed = Math.seed(seed * cntr)();
+        var s = parseInt(Math.floor(Math.seed(seed)() * 4) + 2.5),
+            h = parseInt(Math.floor(Math.seed(seed * s)() * 40) + 20),
+            w = parseInt(Math.floor(Math.seed(seed * h)() * 50) + 20);
+
+        // console.log(seed, s, h, w);
+
+        return newObj(
+            cvs.width,
+            cvs.height - h,
+            w,
+            h,
+            s,
+            true
+        );
+    }
+
+    function update() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+        if (fpsi * speed >= fps) {
+            fpsi = 0;
+            cntr++;
+            uDone = true;
+        }
+
+        if (chr.ml)
+            chr.vx = -chr.s;
+        if (chr.mr)
+            chr.vx = chr.s;
+        if (!chr.ml && !chr.mr)
+            chr.vx = 0;
+
+        if (chr.x + chr.vx <= 10 || chr.x + 10 + chr.vx >= cvs.width)
+            chr.vx = 0;
+
+        chr.x += chr.vx;
+        chr.y += chr.vy;
+
+        if (chr.onG !== false) {
+            chr.vx *= phscs.tg;
+        } else {
+            chr.vy += phscs.g;
+        }
+
+        chr.onG = false;
+
+        if (uDone) {
+            if (anobj > 0) {
+                anobj--;
+            } else {
+                anobj = true;
+            }
+        }
+
+        for (var i = 0; i < objs.length; i++) {
+            var o = objs[i];
+            // console.log(o);
+
+            o.x -= o.s;
+            if (chr.x > o.x && chr.x < o.x + o.w &&
+                chr.y + 10 > o.y && chr.y + 10 < o.y + o.h) {
+
+                if (o.k) {
+                    console.log("Game over!");
+                } else {
+                    // console.log("Grounded");
+                    chr.y = o.y - 10;
+                    chr.vy = 0;
+                    chr.onG = true;
+                }
+            } else {
+                // console.log(
+                //     "Collision of " + i + ": " +
+                //     (chr.x > o.x) + " :: " +
+                //     (chr.x < o.x + o.w) + " :: " +
+                //     (chr.y > o.y) + " :: " +
+                //     (chr.y < o.y + o.h)
+                // );
+            }
+
+            if (o.x + o.w < 0) {
+                objs.splice(i, 1);
+            } else {
+                ctx.fillStyle = "white";
+                ctx.fillRect(o.x, o.y, o.w, o.h);
+
+                objs[i] = o;
+            }
+        }
+        // if (chr.y + 10 > cvs.height) {
+        //     chr.vy = 0;
+        //     chr.onG = true;
+        // }
+
+        rarr = [
+            0.018
+        ];
+        seed = Math.seed(seed * cntr)();
+        for (var rir = 0; rir < rarr.length && seed >= rarr[rir]; rir++);
+        // console.log(seed, rir);
+        if (rir === 0 && anobj === true) {
+            anobj = parseInt(Math.seed(seed * randObj())() * 15);
+        }
+
+        ctx.fillStyle = "rgba(155, 255, 255, 1)";
+        ctx.strokeStyle = "20px solid black";
+        ctx.beginPath();
+        ctx.arc(chr.x, chr.y, 10, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fill();
+        ctx.closePath();
+
+        fpsi++;
+        uDone = false;
+
+        requestAnimationFrame(update);
+    }
+
+    function m_key(evt, sos) {
+        switch (evt.keyCode) {
+            case 37:
+            case 65:
+                m(sos, "l");
+                break;
+            case 38:
+            case 32:
+            case 87:
+                m(sos, "u");
+                break;
+            case 39:
+            case 68:
+                m(sos, "r");
+                break;
+        }
+    }
+
+    function m(sos, d) {
+        switch (d) {
+            case "l":
+                chr.ml = sos;
+                break;
+            case "r":
+                chr.mr = sos;
+                break;
+            case "u":
+                console.log("Jump: " + sos + " :: " + chr.onG + " :: " + chr.vy);
+                if (sos && chr.onG !== false)
+                    chr.vy = -chr.jh;
+                else if (chr.vy < -chr.jh)
+                    chr.vy = -chr.jh;
+                break;
+        }
+    }
+</script>
+
+</html>
